@@ -42,7 +42,7 @@ Here is the gimbal and camera positions.
 > Gimbal
 > ![Unity](./img/Unity_car_suburb2.png)
 
-Using this setup I was able to produce 23,760 256x256 RGB images of cars and trucks in three environments along with their corresponding masks. This I believed was sufficient data to make the try. In some of the images the target was ocluded, partially or fully, but this was a tiny percentage. I hoped that this would not be an issue for training, but was not going to go through manually and remove them. 
+Using this setup I was able to produce 23,760 256x256 RGB images of cars and trucks in three environments along with their corresponding masks. This I believed was sufficient data to make the try. In some of the images the target was occluded, partially or fully, but this was a tiny percentage. I hoped that this would not be an issue for training, but was not going to go through manually and remove them. 
 > Training Data
 > ![Unity](./img/explorer.png)
 
@@ -52,9 +52,9 @@ For test data I needed real picture of real cars and pickups. I used a subset of
 ## Model Training and Analysis
 I trained the model both with the Microsoft COCO data set as a base, to take advantage of transfer learning, and with random weights. I was worried that the COCO weights might poison the experiment so I ran it for one epoch and then evaluated. It did horribly, scoring a precision of 0.16 against validation data and .01 against the test data. This convinced me that I could use transfer learning safely, but I ran both ways regardless. Table 1 summarizes the results. I chose precision as the metric as it is as good as any and I do not have a use case requiring a specific metric. Had I included pedestrians I might have focused on recall, as missing a pedestrian might be disastrous. For now, precision it is. 
 
-First, I looked at the average precision scores on the train and validation sets. Really, this is only slightly interesting -- who cares if a model trained on synthetic data can predict against synthetic data -- but is important to inspect to ensure that the model is not over-fitting. Validation precision scores are always within .01 of training so no over-fitting is occuring, even after 25 epochs. This suggests that a LOT of training epochs could be sustained, but I ran out of time.  
+First, I looked at the average precision scores on the train and validation sets. Really, this is only slightly interesting -- who cares if a model trained on synthetic data can predict against synthetic data -- but is important to inspect to ensure that the model is not over-fitting. Validation precision scores were always within .01 of training so no over-fitting is occuring, even after 25 epochs. This suggests that a LOT of training epochs could be sustained. Table 1 summarizes the results. 
 
->Average precision scores against training and validation data
+>Table 1 - average precision scores against training and validation data
 
 | Epochs | COCO  |   Train   |   Val     |
 |:------:|:-----:|:---------:|:---------:|
@@ -69,19 +69,20 @@ Next came the interesting part, looking at the test results. First, the non-tran
 
 
 | Cars | Pickups | 
-:-------------------------:|----------------------------:
+:-------------------------:|:----------------------------:
 ![Unity](./img/car1.png)   | ![Unity](./img/pickup.png)
 ![Unity](./img/car2.png)   | ![Unity](./img/pickup2.png)
 
 
 Sadly, it is very optimistic and finds non-vehicles as well. 
-> ![Unity](./img/oops.png =256x256)
 
+| Not a car | Not a pickup | 
+:-------------------------:|:----------------------------:
+![Unity](./img/oops.png)   | ![Unity](./img/oops2.png)
 
+Overall, it is managing a 0.4-ish precision on the classification task. After 25 epochs it is finding 93% of the vehicles and doing marginally better on classification. I believe that it could have done a lot better with sufficient training images and epochs, but switched to a COCO-based approach to save time. With transfer learning, after five epochs the model is doing very well, finding almost every car and with an average precision of 0.83 on the classification task. Additional epochs did not improve matters. At 25 epochs the model starting seeing pickup trucks everywhere, including nine of the ten images containing no vehicles. I do not know why. Table 2 summarizes the results.   
 
-managing a 0.4-ish precision. 
-
->Precision scores by class against test data
+>Table 2 - precision scores by class against test data
 
 | Epochs | COCO  |   Car     |   Pickup  |   Nothing  |
 |:------:|:-----:|:---------:|:---------:|:----------:|
@@ -89,22 +90,26 @@ managing a 0.4-ish precision.
 |    10  |  No   |   0.42    |   0.29    |      0.14  |
 |    25  |  No   |   0.44    |   0.42    |      0.00  |
 |    5   |  Yes  |   0.92    |   0.75    |      1.00  |
-|    10  |  Yes  |   0.90    |   0.75    |      1.00  |
-|    25  |  Yes  |   0.89    |   0.75    |      0.05  |
+|    10  |  Yes  |   0.90    |   0.72    |      1.00  |
+|    25  |  Yes  |   0.89    |   0.70    |      0.05  |
 
 
 ## Conclusion
-
+An neural network model trained exclusively on synthetic images does a credible job of identifying the presence of vehicles in an image after a fairly short training period. It does less well on classifying the type of vehicle in the image, but was getting better with more training. With transfer learning, that same model finds almost every vehicle and manages a 0.83 precision on classification after only five epochs. The use of synthetic data to train image classifiers appears to be effective. 
 
 ## Next Steps
+This only a first step, this project can be expanded along several lines. First, I had intended to have more than two classes. Adding pedestrians, trucks, ambulances, police cars, etc. would increase the challenge. Second, more backgrounds are needed. In truth I only used two, urban and suburban. Third, more images. Finally, I would like to train the random weight initialized model for longer to see if it actually catches up to the COCO-based one.  
 
 ## Project Details
+This repository contains all of the code required to run the Mask R-CNN model. It does not contain the Unity3d code required to generate the synthetic data. I used several purchased assets that I have license to use, but not re-distribute. 
 
-### Layout
-
+### Project Layout
+The project is in two major directories:
+- data-prep: contains all of the data preparation code.
+- model: contains the training, prediction and evaluation code. Inside, the mrcnn directory contains the Mask R-CNN library and the models directory is where weights files are stored. 
 
 ### Installation
-
+To install on Sagemaker one must run "python3 setup.py install". That should do most of the installation of the Mask R-CNN library, but I got inconsistent results. At the top of each notebook is a block of commented apt-gets and pip installs. I found that I would sometimes have to run those as well. 
 
 ## Credits
 - I used the very excellent Mask R-CNN implementation by Waleed Abdulla (available [here](https://github.com/matterport/Mask_RCNN)) as the foundation for my model. It is very well documented, easy to understand, works like a charm, and I can recommend it to anyone interested in R-CNNs without reservation. 
