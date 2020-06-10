@@ -47,7 +47,7 @@ Using this setup I was able to produce 23,760 256x256 RGB images of cars and tru
 > ![Unity](./img/explorer.png)
 
 ### Testing Data
-For test data I needed real picture of real cars and pickups. I used a subset of imagees from the Stanford 'Cars' dataset. I hand selected cars and pickups, skipping over SUVs and cross-overs as they are neither clearly car nor truck. As this was a manual process I chose a small set, 50 of each. I added 10 images with neither car nor pickup in them as well. I would have preferred a larger test set, but determined that this was enough to prove the point. These I then resized to 256x256 RGB and labeled. 
+For test data I needed real picture of real cars and pickups. I used a subset of images from the Stanford 'Cars' dataset. I hand selected cars and pickups, skipping over SUVs and cross-overs as they are neither clearly car nor truck. As this was a manual process I chose a small set, 50 of each. I added 10 images with neither car nor pickup in them as well. I would have preferred a larger test set, but determined that this was enough to prove the point. These I then resized to 256x256 RGB and labeled. 
 
 ## Model Training and Analysis
 I trained the model both with the Microsoft COCO data set as a base, to take advantage of transfer learning, and with random weights. I was worried that the COCO weights might poison the experiment so I ran it for one epoch and then evaluated. It did horribly, scoring a precision of 0.16 against validation data and .01 against the test data. This convinced me that I could use transfer learning safely, but I ran both ways regardless. Table 1 summarizes the results. I chose precision as the metric arbitrarily as I do not have a use case requiring a specific metric. Had I included pedestrians I might have used recall, as missing a pedestrian might be disastrous. For now, precision it is. 
@@ -65,7 +65,7 @@ First, I looked at the average precision scores on the train and validation sets
 |    10  |  Yes  |   0.88    |   0.88    |
 |    25  |  Yes  |   0.95    |   0.94    |
 
-Next came the interesting part, looking at the test results. First, the non-transfer-learning results. After five epochs the model is doing a good job of finding vehicles, finding 89% of them. 
+Next came the interesting part, looking at the test results. First, the non-transfer-learning results. Overall it is performing well. After only five epochs it is managing a 88% percent recall on the detection task, though it is struggling with the classification task. Twenty epochs later its creeping up on the classification. As it is showing no signs of over-fitting, I believe that this model could be subjected to many more training epochs. 
 
 
 | Cars | Pickups | 
@@ -74,31 +74,32 @@ Next came the interesting part, looking at the test results. First, the non-tran
 ![Unity](./img/car2.png)   | ![Unity](./img/pickup2.png)
 
 
-Sadly, it is very optimistic and finds non-vehicles as well. 
+It is not perfect and finds a few non-vehicles as well. 
 
 | Not a car | Not a pickup | 
 :-------------------------:|:----------------------------:
 ![Unity](./img/oops.png)   | ![Unity](./img/oops2.png)
 
-Overall, it is managing roughly a 0.4 precision on the classification task. After 25 epochs it is finding 93% of the vehicles and doing marginally better on classification. I believe that it could have done a lot better with sufficient training images and epochs, but switched to a COCO-based approach to save time. With transfer learning, after five epochs the model is doing very well, finding almost every vehicle and with an average precision of 0.83 on the classification task. Additional epochs did not improve matters. At 25 epochs the model starting seeing pickup trucks everywhere, including nine of the ten images containing no vehicles. I do not know why. Table 2 summarizes the results.   
+Next, the pre-trained model. I first ran it for one short epoch to watch it fail. This ensures that its performance is based not predominately on its previous training, but its subsequent training. Strangely, it does not do quite as well on the detection task and pretty much believes everything is a pickup truck on the classification task. Maybe it is from Texas. Again, no signs of overfitting so perhaps with more training it would get over its pickup truck obsession. 
 
->Table 2 - precision scores by class against test data
+>Charts 1 & 2 - Recall on test dataset for randomized initial weights and for MS COCO initialized weights
 
-| Epochs | COCO  |   Car     |   Pickup  |   Nothing  |
-|:------:|:-----:|:---------:|:---------:|:----------:|
-|    5   |  No   |   0.43    |   0.41    |      0.00  |
-|    10  |  No   |   0.42    |   0.29    |      0.14  |
-|    25  |  No   |   0.44    |   0.42    |      0.00  |
-|    5   |  Yes  |   0.92    |   0.75    |      1.00  |
-|    10  |  Yes  |   0.90    |   0.72    |      1.00  |
-|    25  |  Yes  |   0.89    |   0.70    |      0.05  |
+| Chart 1 | Chart 2 | 
+:-------------------------:|:----------------------------:
+![Unity](./img/randomized.png)   | ![Unity](./img/pre-trained.png)
+
+>Charts 3 & 4 - Corresponding confusion matrixes at 10 epochs
+
+| Random weight initialized | Pre-trained | 
+:-------------------------:|:----------------------------:
+![Unity](./img/random-confusion.png)   | ![Unity](./img/coco-confusion.png)
 
 
 ## Conclusion
-An neural network model trained exclusively on synthetic images does a credible job of identifying the presence of vehicles in an image after a fairly short training period. It does less well on classifying the type of vehicle in the image, but was getting incrementally better with each epoch. With transfer learning, that same model finds almost every vehicle and manages a 0.83 precision on classification after only five epochs. Taken together, this suggests that the use of synthetic data to train image classifiers is effective. 
+A neural network model trained exclusively on synthetic images does a creditable job of identifying the presence of vehicles in an image after a fairly short training period. It does less well on classifying the type of vehicle in the image, but was getting incrementally better with each epoch. With transfer learning, the model performed not quite as well on detection (but still 88%) and had a strong bias towards classifying vehicles as pickup trucks. Both were weak on classification. Nonetheless both were successful to some extent, suggesting that the use of synthetic data to train image classifiers is effective. 
 
 ## Next Steps
-This only a first step, this project can be expanded along several lines. First, I had intended to have more than two classes of objects. Adding pedestrians, trucks, ambulances, police cars, etc. would increase the challenge. Second, more backgrounds are needed. In truth I only used two, urban and suburban. Third, more images. Finally, I would like to train the random weight initialized model for longer to see if it actually catches up to the COCO-based one.  
+This only a first step, this project can be expanded along several lines. First, I had intended to have more than two classes of objects. Adding pedestrians, trucks, ambulances, police cars, etc. would increase the challenge. Second, more backgrounds are needed. In truth I only used two, urban and suburban. Third, more images. Finally, more training epochs for both models, until they show signs of overfitting.  
 
 ## Project Details
 This repository contains all of the code required to run the Mask R-CNN model and the image processing code. It does not contain the Unity3d code required to generate the synthetic data. I used several purchased assets that I have license to use, but not re-distribute. Also, the Unity3d project is five gig. 
@@ -112,5 +113,5 @@ The project is in two major directories:
 To install on Sagemaker one must run "python3 setup.py install" to setup the Mask R-CNN framework. That should do most of the installation of the Mask R-CNN library, but I got inconsistent results. At the top of each notebook is a block of commented apt-gets and pip installs. I found that I would sometimes have to run those as well. 
 
 ## Credits
-- I used the very excellent Mask R-CNN implementation by Waleed Abdulla (available [here](https://github.com/matterport/Mask_RCNN)) as the foundation for my model. It is very well documented, easy to understand, works like a charm, and I can recommend it to anyone interested in R-CNNs without reservation. 
+- I used the very excellent Mask R-CNN implementation by Waleed Abdulla (available [here](https://github.com/matterport/Mask_RCNN)) as the foundation for my model. The code is in the mrcnn directory. It is very well documented, easy to understand, works like a charm, and I can recommend it to anyone interested in R-CNNs without reservation. 
 - For testing data I used a subset of the Stanford 'Cars' data available [here](https://ai.stanford.edu/~jkrause/cars/car_dataset.html).
